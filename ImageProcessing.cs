@@ -673,7 +673,7 @@ namespace AOCI_1
             int c = 0;
             var bluredImage = copyImage.SmoothGaussian(kernelSize);
 
-            var threshold = new Gray(80); // пороговое значение
+            var threshold = new Gray(120); // пороговое значение
             var color = new Gray(255); // этим цветом будут закрашены пиксели, имеющие значение > threshold
             var binarizedImage = bluredImage.ThresholdBinary(threshold, color);
 
@@ -702,10 +702,10 @@ namespace AOCI_1
                     var points = approxContour.ToArray();
                     contoursImage.Draw(CvInvoke.MinAreaRect(approxContour), new Bgr(Color.GreenYellow), 2);
                 }
-                if (CvInvoke.ContourArea(approxContour, false) > 256)
+                if (CvInvoke.ContourArea(approxContour, false) > 99)
                 {
 
-                    if (approxContour.Size == 3) // если контур содержит 3 точки, то рисуется треугольник
+                    if (approxContour.Size == 4) // если контур содержит 3 точки, то рисуется треугольник
                     {
                         var points = approxContour.ToArray();
                         contoursImage.Draw(CvInvoke.MinAreaRect(approxContour), new Bgr(Color.GreenYellow), 2);
@@ -739,17 +739,17 @@ namespace AOCI_1
 
             return resultImage;
         }
-        public Image<Bgr, byte> hsvСontours(Image<Gray, byte> copyImage)
-        {
-            var hsvImage = sourceImage.Convert<Hsv, byte>(); // конвертация в HSV
-            var hueChannel = hsvImage.Split()[0]; // выделение канала Hue
-            byte color = 30; // соответствует желтому тону в Emgu.CV
-            byte rangeDelta = 10; // величина разброса цвета
-            var resultImage = hueChannel.InRange(new Gray(color - rangeDelta), new Gray(color +
-            rangeDelta));
+        //public Image<Bgr, byte> hsvСontours(Image<Gray, byte> copyImage)
+        //{
+        //    var hsvImage = sourceImage.Convert<Hsv, byte>(); // конвертация в HSV
+        //    var hueChannel = hsvImage.Split()[0]; // выделение канала Hue
+        //    byte color = 30; // соответствует желтому тону в Emgu.CV
+        //    byte rangeDelta = 10; // величина разброса цвета
+        //    var resultImage = hueChannel.InRange(new Gray(color - rangeDelta), new Gray(color +
+        //    rangeDelta));
 
-            return resultImage;
-        }
+        //    return resultImage;
+        //}
         public void StartVideoFromCam()
         {
             capture = new VideoCapture();
