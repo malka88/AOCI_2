@@ -228,5 +228,23 @@ namespace AOCI_2
             resultImage.qY = int.Parse(textBox14.Text);
             imageBox2.Image = resultImage.Reflection(copyImage);
         }
+
+        private void button18_Click(object sender, EventArgs e)
+        {
+            var copyImage = sourceImage.Copy().Convert<Gray, byte>();
+            imageBox2.Image = resultImage.triangleСontours(copyImage);
+        }
+
+        private void button19_Click(object sender, EventArgs e)
+        {
+            var copyImage = sourceImage.Copy().Convert<Gray, byte>();
+            imageBox2.Image = resultImage.roundСontours(copyImage);
+        }
+
+        private void button20_Click(object sender, EventArgs e)
+        {
+            var copyImage = sourceImage.Copy().Convert<Gray, byte>();
+            imageBox2.Image = resultImage.squareСontours(copyImage);
+        }
     }
 }
