@@ -34,7 +34,7 @@ namespace AOCI_2
             if (result == DialogResult.OK) // открытие выбранного файла
             {
                 string fileName = openFileDialog.FileName;
-                sourceImage = new Image<Bgr, byte>(fileName).Resize(640, 480, Inter.Linear);
+                sourceImage = new Image<Bgr, byte>(fileName);
                 resultImage = new ImageProcessing(sourceImage);
 
                 imageBox1.Image = sourceImage;
@@ -231,20 +231,35 @@ namespace AOCI_2
 
         private void button18_Click(object sender, EventArgs e)
         {
+            resultImage.contourArea = trackBar8.Value;
+            resultImage.thresholdD = trackBar9.Value;
             var copyImage = sourceImage.Copy().Convert<Gray, byte>();
             imageBox2.Image = resultImage.triangleСontours(copyImage);
+            label7.Text = resultImage.countOfContours.ToString();
         }
 
         private void button19_Click(object sender, EventArgs e)
         {
+            resultImage.contourArea = trackBar8.Value;
+            resultImage.thresholdD = trackBar9.Value;
             var copyImage = sourceImage.Copy().Convert<Gray, byte>();
             imageBox2.Image = resultImage.roundСontours(copyImage);
+            label7.Text = resultImage.countOfContours.ToString();
         }
 
         private void button20_Click(object sender, EventArgs e)
         {
+            resultImage.contourArea = trackBar8.Value;
+            resultImage.thresholdD = trackBar9.Value;
             var copyImage = sourceImage.Copy().Convert<Gray, byte>();
             imageBox2.Image = resultImage.squareСontours(copyImage);
+            label7.Text = resultImage.countOfContours.ToString();
+        }
+
+        private void button21_Click(object sender, EventArgs e)
+        {
+            var copyImage = sourceImage.Copy().Convert<Gray, byte>();
+            imageBox2.Image = resultImage.hsvСontours(copyImage);
         }
     }
 }

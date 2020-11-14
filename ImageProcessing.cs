@@ -49,6 +49,10 @@ namespace AOCI_1
         public double angle { get; set; }
         public int qX { get; set; }
         public int qY { get; set; }
+        public int contourArea { get; set; }
+        public int thresholdD { get; set; }
+        public int countOfContours { get; set; }
+
 
         public Image<Bgr, byte> Processing()
         {
@@ -598,7 +602,7 @@ namespace AOCI_1
             int c = 0;
             var bluredImage = copyImage.SmoothGaussian(kernelSize);
 
-            var threshold = new Gray(80); // пороговое значение
+            var threshold = new Gray(thresholdD); // пороговое значение
             var color = new Gray(255); // этим цветом будут закрашены пиксели, имеющие значение > threshold
             var binarizedImage = bluredImage.ThresholdBinary(threshold, color);
 
@@ -633,7 +637,7 @@ namespace AOCI_1
                     contoursImage.Draw(new Triangle2DF(points[0], points[1], points[2]),
                     new Bgr(Color.GreenYellow), 2);
                 }
-                if (CvInvoke.ContourArea(approxContour, false) > 256)
+                if (CvInvoke.ContourArea(approxContour, false) > contourArea)
                 {
 
                     if (approxContour.Size == 3) // если контур содержит 3 точки, то рисуется треугольник
@@ -643,12 +647,11 @@ namespace AOCI_1
                         new Bgr(Color.GreenYellow), 2);
                         c++;
                         contoursImage = contoursImage.Resize(640, 480, Inter.Linear);
-                        //obj.Add(points);
-                        //listBox2.Items.Add(c);
                     }
                 }
             }
 
+            countOfContours = c;
 
             return contoursImage;
         }
@@ -673,7 +676,7 @@ namespace AOCI_1
             int c = 0;
             var bluredImage = copyImage.SmoothGaussian(kernelSize);
 
-            var threshold = new Gray(120); // пороговое значение
+            var threshold = new Gray(thresholdD); // пороговое значение
             var color = new Gray(255); // этим цветом будут закрашены пиксели, имеющие значение > threshold
             var binarizedImage = bluredImage.ThresholdBinary(threshold, color);
 
@@ -697,25 +700,25 @@ namespace AOCI_1
                 CvInvoke.ArcLength(contours[i], true) * 0.05, // точность аппроксимации, прямо
                                                               //пропорциональная площади контура
                 true); // контур становится закрытым (первая и последняя точки соединяются)
-                if (approxContour.Size == 4) // если контур содержит 3 точки, то рисуется треугольник
-                {
-                    var points = approxContour.ToArray();
-                    contoursImage.Draw(CvInvoke.MinAreaRect(approxContour), new Bgr(Color.GreenYellow), 2);
-                }
+                //if (approxContour.Size == 4) // если контур содержит 3 точки, то рисуется треугольник
+                //{
+                //    var points = approxContour.ToArray();
+                //    contoursImage.Draw(CvInvoke.MinAreaRect(approxContour), new Bgr(Color.GreenYellow), 2);
+                //}
                 if (CvInvoke.ContourArea(approxContour, false) > 99)
                 {
-
-                    if (approxContour.Size == 4) // если контур содержит 3 точки, то рисуется треугольник
+                    var points = approxContour.ToArray();
+                    if (squareСontoursS(points)) // если контур содержит 3 точки, то рисуется треугольник
                     {
-                        var points = approxContour.ToArray();
+                        
                         contoursImage.Draw(CvInvoke.MinAreaRect(approxContour), new Bgr(Color.GreenYellow), 2);
                         c++;
-                        contoursImage = contoursImage.Resize(640, 480, Inter.Linear);
                         //obj.Add(points);
                         //listBox2.Items.Add(c);
                     }
                 }
             }
+            countOfContours = c;
 
             return contoursImage;
         }
@@ -723,6 +726,7 @@ namespace AOCI_1
         {
             var grayImage = sourceImage.Convert<Gray, byte>();
             var bluredImage = grayImage.SmoothGaussian(9);
+            int c = 0;
 
             List<CircleF> circles = new List<CircleF>(CvInvoke.HoughCircles(bluredImage,
                  HoughModes.Gradient,
@@ -735,21 +739,26 @@ namespace AOCI_1
 
             var resultImage = sourceImage.Copy();
 
-            foreach (CircleF circle in circles) resultImage.Draw(circle, new Bgr(Color.Blue), 2);
+            foreach (CircleF circle in circles)
+            {
+                resultImage.Draw(circle, new Bgr(Color.Blue), 2);
+                c++;
+            }
+            countOfContours = c;
 
             return resultImage;
         }
-        //public Image<Bgr, byte> hsvСontours(Image<Gray, byte> copyImage)
-        //{
-        //    var hsvImage = sourceImage.Convert<Hsv, byte>(); // конвертация в HSV
-        //    var hueChannel = hsvImage.Split()[0]; // выделение канала Hue
-        //    byte color = 30; // соответствует желтому тону в Emgu.CV
-        //    byte rangeDelta = 10; // величина разброса цвета
-        //    var resultImage = hueChannel.InRange(new Gray(color - rangeDelta), new Gray(color +
-        //    rangeDelta));
+        public Image<Bgr, byte> hsvСontours(Image<Gray, byte> copyImage)
+        {
+            var hsvImage = sourceImage.Convert<Hsv, byte>(); // конвертация в HSV
+            var hueChannel = hsvImage.Split()[0]; // выделение канала Hue
+            byte color = 30; // соответствует желтому тону в Emgu.CV
+            byte rangeDelta = 10; // величина разброса цвета
+            var resultImage = hueChannel.InRange(new Gray(color - rangeDelta), new Gray(color +
+            rangeDelta));
 
-        //    return resultImage;
-        //}
+            return resultImage.Convert<Bgr, byte>();
+        }
         public void StartVideoFromCam()
         {
             capture = new VideoCapture();
