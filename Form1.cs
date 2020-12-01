@@ -21,6 +21,7 @@ namespace AOCI_2
         private ImageProcessing resultImage;
         private Image<Bgr, byte> boolImage;
         int c = 0;
+
         public Form1()
         {
             InitializeComponent();
@@ -260,6 +261,35 @@ namespace AOCI_2
         {
             var copyImage = sourceImage.Copy().Convert<Gray, byte>();
             imageBox2.Image = resultImage.hsvСontours(copyImage);
+        }
+
+        private void button22_Click(object sender, EventArgs e)
+        {
+            var copyImage = sourceImage.Copy().Convert<Gray, byte>();
+            imageBox2.Image = resultImage.textSearch(copyImage);
+            imageBox3.Image = resultImage.roiCopy;
+
+            foreach(string textPic in resultImage.textPic)
+            {
+                listBox1.Items.Add(textPic.ToString());
+            } 
+        }
+
+        private void button23_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog f = new OpenFileDialog();
+            f.ShowDialog();
+
+            resultImage.frame = CvInvoke.Imread(f.FileName, ImreadModes.Unchanged);
+
+
+            resultImage.ImageProcessed += ImageProcessed;
+            //imageBox2.Image = resultImage.frame.Split()[1];
+            resultImage.StartVideoFromCam();
+        }
+        private void ImageProcessed(object sender, ImageProcessing.ImageEventArgs e)
+        {
+            imageBox2.Image = e.Image;
         }
     }
 }

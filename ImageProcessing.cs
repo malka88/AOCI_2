@@ -8,6 +8,7 @@ using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
+using Emgu.CV.OCR;
 
 namespace AOCI_1
 {
@@ -53,6 +54,20 @@ namespace AOCI_1
         public int thresholdD { get; set; }
         public int countOfContours { get; set; }
 
+        List<Rectangle> rois = new List<Rectangle>();
+        public Image<Bgr, byte> roiCopy { get; set; }
+
+        public StringBuilder strBuilder = new StringBuilder();
+        CascadeClassifier face;
+
+        Tesseract ocr;
+        public List<string> textPic { get; set; } = new List<string>();
+
+        public Image<Bgra, byte> resWeb { get; set; }
+
+        public Mat image { get; set; } = new Mat();
+        public Image<Bgr, byte> input { get; set; }
+        public Mat frame { get; set; }
 
         public Image<Bgr, byte> Processing()
         {
@@ -596,6 +611,8 @@ namespace AOCI_1
             return reflectionImg;
         }
 
+        //4 лаба
+
         public Image<Bgr, byte> triangleСontours(Image<Gray, byte> copyImage)
         {
             int kernelSize = 5; // радиус размытия
@@ -646,7 +663,6 @@ namespace AOCI_1
                         contoursImage.Draw(new Triangle2DF(points[0], points[1], points[2]),
                         new Bgr(Color.GreenYellow), 2);
                         c++;
-                        contoursImage = contoursImage.Resize(640, 480, Inter.Linear);
                     }
                 }
             }
@@ -759,8 +775,54 @@ namespace AOCI_1
 
             return resultImage.Convert<Bgr, byte>();
         }
+
+        public Image<Bgr, byte> textSearch(Image<Gray, byte> copyImage)
+        {
+            var gray = sourceImage.Convert<Gray, byte>();
+            gray.ThresholdBinaryInv(new Gray(180), new Gray(255));
+
+            var thresh = sourceImage.Convert<Gray, byte>();
+            thresh._ThresholdBinaryInv(new Gray(128), new Gray(255));
+            thresh._Dilate(5);
+
+            VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
+            CvInvoke.FindContours(thresh, contours, null, RetrType.List, ChainApproxMethod.ChainApproxSimple);
+            var output = sourceImage.Copy();
+            for (int i = 0; i < contours.Size; i++)
+            {
+                if (CvInvoke.ContourArea(contours[i], false) > 50) //игнорирование маленьких контуров
+                {
+                    Rectangle rect = CvInvoke.BoundingRectangle(contours[i]);
+                    rois.Add(rect);
+                    output.Draw(rect, new Bgr(Color.Blue), 1);
+                    sourceImage.ROI = rect;
+
+                    roiCopy = sourceImage.Copy();
+
+                    sourceImage.ROI = System.Drawing.Rectangle.Empty;
+
+                    //ocr = new Tesseract(@"…\\tessdata", "eng", OcrEngineMode.TesseractLstmCombined);
+                    ocr = new Tesseract("C:\\Users\\malka\\source\\repos\\AOCI_2\\tessdata", "eng", OcrEngineMode.TesseractLstmCombined); //исправь путь
+                    ocr.SetImage(roiCopy); //фрагмент изображения, содержащий текст
+                    ocr.Recognize(); //распознание текста
+                    Tesseract.Character[] words = ocr.GetCharacters();
+
+                    for (int j = 0; j < words.Length; j++)
+                    {
+                        strBuilder.Append(words[j].Text);
+                    }
+
+                    textPic.Add(ocr.GetUTF8Text());
+                }
+            }
+
+            //sourceImage.ROI = rois[0];
+
+            return output;
+        }
         public void StartVideoFromCam()
         {
+            face = new CascadeClassifier("C:\\Users\\malka\\source\\repos\\AOCI_2\\haarcascade_frontalface_default.xml");
             capture = new VideoCapture();
             capture.ImageGrabbed += ProcessFrame;
             capture.Start();
@@ -777,8 +839,6 @@ namespace AOCI_1
             return videoImage;
         }
 
-        //public Image
-
         public void VideoProcessing(string fileName)
         {
             capture = new VideoCapture(fileName); //берем кадры из видео
@@ -788,11 +848,35 @@ namespace AOCI_1
         {
             try
             {
-                var frame = new Mat();
-                capture.Retrieve(frame);
-                sourceImage = frame.ToImage<Bgr, byte>();
-                var result = Processing();
-                ImageProcessed?.Invoke(this, new ImageEventArgs { Image = result });
+                //var frame = new Mat();
+                capture.Retrieve(image);
+                input = image.ToImage<Bgr, byte>();
+                List<Rectangle> faces = new List<Rectangle>();
+                Mat ugray = new Mat();
+                CvInvoke.CvtColor(image, ugray, Emgu.CV.CvEnum.ColorConversion.Bgr2Gray);
+                Rectangle[] facesDetected = face.DetectMultiScale(ugray, 1.1, 10, new Size(20,20));
+                faces.AddRange(facesDetected);
+
+                Image<Bgra, byte> res = input.Convert<Bgra, byte>();
+
+                if(faces.Count > 0)
+                {
+                    foreach(Rectangle rect in faces)
+                    {
+                        res.ROI = rect;
+
+                        Image<Bgra, byte> small = frame.ToImage<Bgra, byte>().Resize(rect.Width, rect.Height, Inter.Nearest);
+
+                        CvInvoke.cvCopy(small, res, small.Split()[1]);
+                        res.ROI = System.Drawing.Rectangle.Empty;
+                    }
+
+                    faces.Clear();
+                }
+                //var result = Processing();
+                ImageProcessed?.Invoke(this, new ImageEventArgs { Image = res });
+
+               // resWeb = res;
             }
             catch (Exception ex)
             {
