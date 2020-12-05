@@ -12,6 +12,12 @@ using Emgu.CV.OCR;
 
 namespace AOCI_1
 {
+    public class TextAndFrame
+    {
+        public string textPic;
+        public Image<Bgr, byte> picCopy;
+        public int numb;
+    }
     public class ImageProcessing
     {
         public Image<Bgr, byte> sourceImage;
@@ -60,7 +66,8 @@ namespace AOCI_1
         public StringBuilder strBuilder = new StringBuilder();
         CascadeClassifier face;
 
-        Tesseract ocr;
+        Tesseract ocr = new Tesseract("C:\\Users\\malka\\source\\repos\\AOCI_2\\tessdata", "eng", OcrEngineMode.TesseractLstmCombined); //исправь путь
+        public List<TextAndFrame> listTextPic { get; set; } = new List<TextAndFrame>();
         public List<string> textPic { get; set; } = new List<string>();
 
         public Image<Bgra, byte> resWeb { get; set; }
@@ -776,14 +783,20 @@ namespace AOCI_1
             return resultImage.Convert<Bgr, byte>();
         }
 
+        public void ItemsClear()
+        {
+            listTextPic.Clear();
+        }
         public Image<Bgr, byte> textSearch(Image<Gray, byte> copyImage)
         {
             var gray = sourceImage.Convert<Gray, byte>();
             gray.ThresholdBinaryInv(new Gray(180), new Gray(255));
 
             var thresh = sourceImage.Convert<Gray, byte>();
-            thresh._ThresholdBinaryInv(new Gray(128), new Gray(255));
+            thresh._ThresholdBinaryInv(new Gray(100), new Gray(255));
             thresh._Dilate(5);
+
+            int number = listTextPic.Count();
 
             VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
             CvInvoke.FindContours(thresh, contours, null, RetrType.List, ChainApproxMethod.ChainApproxSimple);
@@ -802,7 +815,6 @@ namespace AOCI_1
                     sourceImage.ROI = System.Drawing.Rectangle.Empty;
 
                     //ocr = new Tesseract(@"…\\tessdata", "eng", OcrEngineMode.TesseractLstmCombined);
-                    ocr = new Tesseract("C:\\Users\\malka\\source\\repos\\AOCI_2\\tessdata", "eng", OcrEngineMode.TesseractLstmCombined); //исправь путь
                     ocr.SetImage(roiCopy); //фрагмент изображения, содержащий текст
                     ocr.Recognize(); //распознание текста
                     Tesseract.Character[] words = ocr.GetCharacters();
@@ -812,9 +824,20 @@ namespace AOCI_1
                         strBuilder.Append(words[j].Text);
                     }
 
-                    textPic.Add(ocr.GetUTF8Text());
+                    
+                    TextAndFrame textPicture = new TextAndFrame();
+
+                    textPicture.textPic = ocr.GetUTF8Text();
+                    textPicture.picCopy = roiCopy;
+                    textPicture.numb = number;
+                    
+
+                    listTextPic.Add(textPicture);
+                    number++;
                 }
             }
+
+            //number = 0;
 
             //sourceImage.ROI = rois[0];
 
@@ -832,9 +855,11 @@ namespace AOCI_1
         {
             var frame = capture.QueryFrame();
 
-            sourceImage = frame.ToImage<Bgr, byte>(); //обрабатываемое изображение из функции Processing приравниваем к фрейму
-            var videoImage = Processing(); //на финальное изображение накладываем фильтр, вызывая функцию
+            textPic.Clear();
 
+            sourceImage = frame.ToImage<Bgr, byte>(); //обрабатываемое изображение из функции Processing приравниваем к фрейму
+
+            var videoImage = textSearch(sourceImage.Convert<Gray, byte>());
             frameCounter++;
             return videoImage;
         }
@@ -865,7 +890,7 @@ namespace AOCI_1
                     {
                         res.ROI = rect;
 
-                        Image<Bgra, byte> small = frame.ToImage<Bgra, byte>().Resize(rect.Width, rect.Height, Inter.Nearest);
+                        Image<Bgra, byte> small = frame.ToImage<Bgra, byte>();
 
                         CvInvoke.cvCopy(small, res, small.Split()[1]);
                         res.ROI = System.Drawing.Rectangle.Empty;

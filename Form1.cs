@@ -20,7 +20,9 @@ namespace AOCI_2
         private Image<Bgr, byte> sourceImage;
         private ImageProcessing resultImage;
         private Image<Bgr, byte> boolImage;
+        private TextAndFrame varTextPic;
         int c = 0;
+        int frameCounter = 0;
 
         public Form1()
         {
@@ -265,13 +267,16 @@ namespace AOCI_2
 
         private void button22_Click(object sender, EventArgs e)
         {
+            timer1.Stop();
+            listBox1.Items.Clear();
+            resultImage.ItemsClear();
             var copyImage = sourceImage.Copy().Convert<Gray, byte>();
             imageBox2.Image = resultImage.textSearch(copyImage);
             imageBox3.Image = resultImage.roiCopy;
 
-            foreach(string textPic in resultImage.textPic)
+            foreach(TextAndFrame tPic in resultImage.listTextPic)
             {
-                listBox1.Items.Add(textPic.ToString());
+                listBox1.Items.Add(tPic.textPic.ToString());
             } 
         }
 
@@ -290,6 +295,56 @@ namespace AOCI_2
         private void ImageProcessed(object sender, ImageProcessing.ImageEventArgs e)
         {
             imageBox2.Image = e.Image;
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            //listBox1.Items.Clear();
+
+            imageBox2.Image = resultImage.timerVideo();
+
+            if (frameCounter >= resultImage.capture.GetCaptureProperty(CapProp.FrameCount))
+                timer1.Enabled = false;
+
+            //foreach (string tPic in resultImage.textPic)
+            //{
+            //    listBox1.Items.Add(tPic.ToString());
+            //}
+            foreach (TextAndFrame tPic in resultImage.listTextPic)
+            {
+                listBox1.Items.Add(tPic.textPic.ToString());
+            }
+        }
+
+        private void button24_Click(object sender, EventArgs e)
+        {
+            timer1.Stop();
+            listBox1.Items.Clear();
+            resultImage.ItemsClear();
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            var result = openFileDialog.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                string fileName = openFileDialog.FileName;
+
+                resultImage.VideoProcessing(fileName);
+
+                timer1.Enabled = true;
+                imageBox3.Image = resultImage.roiCopy;
+            }
+        }
+
+        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int index = listBox1.SelectedIndex;
+
+            foreach (TextAndFrame tPic in resultImage.listTextPic)
+            {
+                if(index == tPic.numb)
+                {
+                    imageBox3.Image = tPic.picCopy;
+                }
+            }
         }
     }
 }
